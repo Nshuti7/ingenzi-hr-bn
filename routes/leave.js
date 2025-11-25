@@ -314,7 +314,7 @@ router.put('/types/:id', [
  *         description: Cannot delete leave type that is in use
  */
 router.delete('/types/:id', [
-  authorize('system_admin')
+  authorize('hr_manager', 'system_admin')
 ], async (req, res) => {
   try {
     const leaveTypeId = parseInt(req.params.id);

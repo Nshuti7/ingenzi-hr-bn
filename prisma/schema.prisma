@@ -71,7 +71,7 @@ model Employee {
 
 model LeaveType {
   id          Int       @id @default(autoincrement())
-  name        String
+  name        String    @unique
   days        Int
   description String?
   createdAt   DateTime  @default(now())
