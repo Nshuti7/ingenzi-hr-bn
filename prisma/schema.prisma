@@ -1,0 +1,190 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  password  String
+  name      String
+  role      String   @default("employee") // employee, hr_manager, system_admin
+  employeeId String? @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  employee Employee?
+
+  @@map("users")
+}
+
+model Department {
+  id          Int       @id @default(autoincrement())
+  name        String
+  description String?
+  status      String    @default("active") // active, inactive
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Relations
+  employees   Employee[]
+  jobVacancies JobVacancy[]
+
+  @@map("departments")
+}
+
+model Employee {
+  id          Int       @id @default(autoincrement())
+  employeeId  String    @unique
+  userId      Int?      @unique
+  firstName   String
+  lastName    String
+  email       String    @unique
+  phone       String?
+  departmentId Int
+  position    String
+  salary      Decimal   @db.Decimal(10, 2)
+  hireDate    DateTime  @db.Date
+  status      String    @default("active") // active, inactive, terminated
+  address     String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Relations
+  user        User?     @relation(fields: [userId], references: [id])
+  department  Department @relation(fields: [departmentId], references: [id])
+  leaveRequests LeaveRequest[]
+  attendance  Attendance[]
+  payrolls    Payroll[]
+
+  @@map("employees")
+}
+
+model LeaveType {
+  id          Int       @id @default(autoincrement())
+  name        String
+  days        Int
+  description String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Relations
+  leaveRequests LeaveRequest[]
+
+  @@map("leave_types")
+}
+
+model LeaveRequest {
+  id          Int       @id @default(autoincrement())
+  employeeId  Int
+  leaveTypeId Int
+  startDate   DateTime  @db.Date
+  endDate     DateTime  @db.Date
+  days        Int
+  reason      String?
+  status      String    @default("pending") // pending, approved, rejected
+  appliedDate DateTime  @default(now())
+  approvedBy  Int?
+  approvedDate DateTime?
+  comments    String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Relations
+  employee    Employee  @relation(fields: [employeeId], references: [id])
+  leaveType   LeaveType @relation(fields: [leaveTypeId], references: [id])
+
+  @@map("leave_requests")
+}
+
+model Attendance {
+  id          Int       @id @default(autoincrement())
+  employeeId  Int
+  date        DateTime  @db.Date
+  checkIn     DateTime?
+  checkOut    DateTime?
+  hoursWorked Decimal?  @db.Decimal(5, 2)
+  status      String    @default("present") // present, absent, late, half_day
+  notes       String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Relations
+  employee    Employee  @relation(fields: [employeeId], references: [id])
+
+  @@unique([employeeId, date])
+  @@map("attendance")
+}
+
+model Payroll {
+  id          Int       @id @default(autoincrement())
+  employeeId  Int
+  month       Int
+  year        Int
+  basicSalary Decimal   @db.Decimal(10, 2)
+  allowances  Decimal   @default(0) @db.Decimal(10, 2)
+  deductions  Decimal   @default(0) @db.Decimal(10, 2)
+  netSalary   Decimal   @db.Decimal(10, 2)
+  workingDays Int
+  status      String    @default("pending") // pending, paid, cancelled
+  paidDate    DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Relations
+  employee    Employee  @relation(fields: [employeeId], references: [id])
+
+  @@unique([employeeId, month, year], name: "employeeId_month_year")
+  @@map("payroll")
+}
+
+model JobVacancy {
+  id          Int       @id @default(autoincrement())
+  title       String
+  departmentId Int
+  description String?
+  requirements String?
+  salaryRange String?
+  status      String    @default("open") // open, closed, filled
+  postedDate  DateTime  @default(now())
+  closingDate DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Relations
+  department  Department @relation(fields: [departmentId], references: [id])
+  applicants Applicant[]
+
+  @@map("job_vacancies")
+}
+
+model Applicant {
+  id          Int       @id @default(autoincrement())
+  jobVacancyId Int
+  firstName   String
+  lastName    String
+  email       String
+  phone       String?
+  resume      String?  // URL to resume file
+  coverLetter String?
+  status      String    @default("pending") // pending, shortlisted, rejected, hired
+  appliedDate DateTime  @default(now())
+  interviewDate DateTime?
+  notes       String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Relations
+  jobVacancy  JobVacancy @relation(fields: [jobVacancyId], references: [id])
+
+  @@map("applicants")
+}
+
