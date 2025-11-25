@@ -159,19 +159,15 @@ router.post('/types', [
 
     const { name, days, description } = req.body;
 
-    // Check for duplicate name (case-insensitive)
-    const existingLeaveType = await prisma.leaveType.findFirst({
-      where: {
-        name: {
-          equals: name,
-          mode: 'insensitive' // Case-insensitive comparison (MySQL doesn't support this, so we'll use a different approach)
-        }
-      }
-    });
+    const normalizedName = name.trim().toLowerCase();
 
-    // For MySQL, do case-insensitive check manually
-    const allLeaveTypes = await prisma.leaveType.findMany();
-    const duplicate = allLeaveTypes.find(lt => lt.name.toLowerCase() === name.toLowerCase());
+    // Check for duplicate name (case-insensitive) - MySQL doesn't support mode: 'insensitive'
+    const existingLeaveTypes = await prisma.leaveType.findMany({
+      select: { name: true }
+    });
+    const duplicate = existingLeaveTypes.some(
+      lt => (lt.name || '').trim().toLowerCase() === normalizedName
+    );
 
     if (duplicate) {
       return res.status(400).json({ error: 'A leave type with this name already exists' });
