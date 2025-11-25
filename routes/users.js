@@ -44,6 +44,7 @@ router.get('/', authenticate, async (req, res) => {
         email: true,
         name: true,
         role: true,
+        status: true,
         employeeId: true,
         createdAt: true,
         updatedAt: true,
@@ -108,6 +109,7 @@ router.get('/:id', authenticate, async (req, res) => {
         email: true,
         name: true,
         role: true,
+        status: true,
         employeeId: true,
         createdAt: true,
         updatedAt: true,
@@ -195,6 +197,7 @@ router.put('/:id', [
         email: true,
         name: true,
         role: true,
+        status: true,
         employeeId: true
       }
     });
@@ -273,7 +276,12 @@ router.put('/:id/status', [
       });
     }
 
-    res.json({ message: 'User status updated successfully' });
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { status: req.body.status }
+    });
+
+    res.json({ message: 'User status updated successfully', status: req.body.status });
   } catch (error) {
     console.error('Update user status error:', error);
     res.status(500).json({ error: 'Failed to update user status' });
